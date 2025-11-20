@@ -1,0 +1,18 @@
+@if (summary) {
+  <div class="cards">
+    <div class="card">
+      <h4>Total líneas evaluadas</h4>
+      <p>{{ summary.total_lineas | number }}</p>
+    </div>
+
+    <div class="card">
+      <h4>Probabilidad promedio</h4>
+      <p>{{ summary.promedio_probabilidad | percent:'1.1-2' }}</p>
+    </div>
+
+    <div class="card">
+      <h4>% líneas en riesgo alto</h4>
+      <p>{{ summary.porcentaje_alto_riesgo | percent:'1.1-2' }}</p>
+    </div>
+  </div>
+}

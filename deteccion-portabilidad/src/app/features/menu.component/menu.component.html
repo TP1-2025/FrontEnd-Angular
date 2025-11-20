@@ -1,0 +1,25 @@
+<div class="menu-container">
+  <h2>Selecciona el tipo de análisis</h2>
+
+  <div class="menu-grid">
+    <div class="menu-card" (click)="verHistorico()">
+      <h3>Dashboard histórico</h3>
+      <p>
+        Ver las métricas agregadas de todo el periodo histórico
+        (marzo a octubre) y su distribución de riesgo.
+      </p>
+    </div>
+
+    <div class="menu-card" (click)="verPorMes()">
+      <h3>Dashboard por mes</h3>
+      <p>
+        Seleccionar un mes específico para ver sus métricas detalladas
+        y comparar contra otro mes.
+      </p>
+    </div>
+  </div>
+
+  <p class="hint">
+    Desde el dashboard también podrás subir un nuevo archivo CSV para evaluar un nuevo periodo.
+  </p>
+</div>

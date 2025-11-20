@@ -1,0 +1,36 @@
+@if (records && records.length > 0) {
+  <table class="risk-table">
+    <thead>
+      <tr>
+        <th>NUMPERIODO</th>
+        <th>Número</th>
+        <th>Cluster</th>
+        <th>Prob. Portabilidad</th>
+        <th>Segmento</th>
+        <th>Plan</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of records; track r.numero) {
+        <tr>
+          <td>{{ r.NUMPERIODO || '-' }}</td>
+          <td>{{ r.numero }}</td>
+          <td>{{ r.cluster_id }}</td>
+          <td
+            [ngClass]="{
+              'low': r.probabilidad_portabilidad < 0.3,
+              'mid': r.probabilidad_portabilidad >= 0.3 && r.probabilidad_portabilidad < 0.7,
+              'high': r.probabilidad_portabilidad >= 0.7
+            }"
+          >
+            {{ r.probabilidad_portabilidad | percent:'1.1-2' }}
+          </td>
+          <td>{{ r.ds_base_bsns || '-' }}</td>
+          <td>{{ r.VCHPLAN_TIPO || '-' }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+} @else {
+  <p>No hay datos para mostrar.</p>
+}

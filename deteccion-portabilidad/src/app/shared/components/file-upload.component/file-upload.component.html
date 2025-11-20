@@ -1,0 +1,11 @@
+
+<div class="file-upload">
+  <input type="file" (change)="onFileChange($event)" accept=".csv" />
+  <button (click)="onUpload()" [disabled]="loading">
+    {{ loading ? 'Procesando...' : 'Subir y procesar' }}
+  </button>
+
+  @if (errorMessage) {
+    <p class="error">{{ errorMessage }}</p>
+  }
+</div>

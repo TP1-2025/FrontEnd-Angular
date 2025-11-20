@@ -1,0 +1,18 @@
+/* src/app/app.component.css */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  padding: 1rem 2rem;
+  background: #1f2933;
+  color: #ffffff;
+}
+
+.app-main {
+  flex: 1;
+  padding: 1rem 2rem;
+  background: #f5f7fa;
+}

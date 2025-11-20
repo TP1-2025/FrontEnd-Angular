@@ -1,0 +1,146 @@
+<!-- src/app/features/dashboard/dashboard.component.html -->
+
+<div class="dashboard-container">
+
+  <section class="top-bar">
+    <div class="left">
+      <h2>Dashboard de Riesgo de Portabilidad</h2>
+
+      @if (modoVista === 'HISTORICO') {
+        <p>
+          Vista: Histórico completo (marzo–octubre)
+        </p>
+      }
+
+      @if (modoVista === 'MES' && mesSeleccionado === null && detalleActual.length === 0) {
+        <p>
+          Vista: Selecciona un mes histórico o sube un nuevo archivo para analizar un periodo.
+        </p>
+      }
+
+      @if (modoVista === 'MES' && mesSeleccionado !== null && detalleActual.length === 0) {
+        <p>
+          Vista: Mes {{ mesSeleccionado }} (histórico)
+        </p>
+      }
+
+      @if (detalleActual.length > 0) {
+        <p>
+          Vista: Dataset subido desde CSV
+        </p>
+      }
+    </div>
+
+    <div class="right">
+      <app-file-upload (fileProcessed)="onFileUploaded($event)"></app-file-upload>
+    </div>
+  </section>
+
+  <section class="mode-switch">
+    <button
+      [class.active]="modoVista === 'HISTORICO'"
+      (click)="cambiarModoVista('HISTORICO')">
+      Histórico completo
+    </button>
+
+    <button
+      [class.active]="modoVista === 'MES'"
+      (click)="cambiarModoVista('MES')">
+      Análisis por mes / dataset
+    </button>
+  </section>
+
+  @if (errorMessage) {
+    <section class="error">
+      {{ errorMessage }}
+    </section>
+  }
+
+  @if (cargandoHistorico) {
+    <section class="loading">
+      Cargando datos históricos...
+    </section>
+  }
+
+  @if (!cargandoHistorico && resumenHistorico) {
+    <section class="selectors">
+      @if (modoVista === 'MES' && detalleActual.length === 0) {
+        <div class="selector-mes">
+          <label>Mes histórico:</label>
+          <select [(ngModel)]="mesSeleccionado">
+            <option [ngValue]="null">-- Seleccionar --</option>
+            @for (p of periodosDisponibles; track p) {
+              <option [ngValue]="p">
+                {{ p }}
+              </option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="selector-riesgo">
+        <label>Filtro de nivel de riesgo:</label>
+        <select [(ngModel)]="filtroRiesgo">
+          <option value="TODOS">Todos</option>
+          <option value="BAJO">Bajo (&lt; 0.3)</option>
+          <option value="MEDIO">Medio (0.3 - 0.7)</option>
+          <option value="ALTO">Alto (&ge; 0.7)</option>
+        </select>
+      </div>
+    </section>
+  }
+
+  @if (!cargandoHistorico && getResumenPrincipal()) {
+    <section>
+      <app-metrics-cards [summary]="getResumenPrincipal()"></app-metrics-cards>
+
+      <div class="charts-wrapper">
+        <app-risk-charts [summary]="getResumenPrincipal()"></app-risk-charts>
+      </div>
+
+      <section class="table-section">
+        <h3>Detalle de líneas ({{ getDetallePrincipal().length }} registros)</h3>
+        <app-risk-table [records]="getDetallePrincipal()"></app-risk-table>
+      </section>
+    </section>
+  }
+
+  @if (
+    modoVista === 'MES'
+    && detalleActual.length === 0
+    && periodosDisponibles.length >= 2
+    && mesSeleccionado !== null
+  ) {
+
+    <section class="compare-section">
+      <h3>Comparar el mes {{ mesSeleccionado }} con otro mes histórico</h3>
+
+      <div class="compare-controls">
+        <label>Mes a comparar:</label>
+        <select [(ngModel)]="mesComparar">
+          <option [ngValue]="null">-- Seleccionar --</option>
+          @for (p of periodosDisponibles; track p) {
+            <option [ngValue]="p" [disabled]="p === mesSeleccionado">
+              {{ p }}
+            </option>
+          }
+        </select>
+      </div>
+
+      @if (getResumenComparacion()) {
+        <div class="compare-grid">
+          <div class="compare-card">
+            <h4>Mes {{ mesSeleccionado }}</h4>
+            <app-metrics-cards [summary]="getResumenComparacion()!.actual"></app-metrics-cards>
+          </div>
+
+          <div class="compare-card">
+            <h4>Mes {{ mesComparar }}</h4>
+            <app-metrics-cards [summary]="getResumenComparacion()!.comparar"></app-metrics-cards>
+          </div>
+        </div>
+      }
+    </section>
+  }
+
+</div>

@@ -1,0 +1,42 @@
+<!-- src/app/shared/components/risk-charts/risk-charts.component.html -->
+
+@if (summary) {
+  <div class="charts-container">
+
+    <div class="chart-card">
+      <h4>Distribución por nivel de riesgo</h4>
+
+      @for (r of summary.por_nivel_riesgo; track r.nivel_riesgo) {
+        <div class="bar-row">
+          <span class="label">{{ r.nivel_riesgo }}</span>
+          <div class="bar">
+            <div
+              class="bar-fill"
+              [style.width]="calcularAnchoBarra(r.conteo, maxConteoNivel)"
+            ></div>
+          </div>
+          <span class="value">{{ r.conteo }}</span>
+        </div>
+      }
+    </div>
+
+    @if (summary.por_cluster && summary.por_cluster.length) {
+      <div class="chart-card">
+        <h4>Distribución por cluster</h4>
+
+        @for (c of summary.por_cluster; track c.cluster_id) {
+          <div class="bar-row">
+            <span class="label">Cluster {{ c.cluster_id }}</span>
+            <div class="bar">
+              <div
+                class="bar-fill"
+                [style.width]="calcularAnchoBarra(c.conteo, maxConteoCluster)"
+              ></div>
+            </div>
+            <span class="value">{{ c.conteo }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
