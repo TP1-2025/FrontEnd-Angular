@@ -10,7 +10,7 @@ import { DashboardSummary } from '../../../core/models/prediction.model';
     PercentPipe    
   ],
   templateUrl: './metrics-cards.component.html',
-  styleUrls: ['./metrics-cards.component.css']
+  styleUrls: ['./metrics-cards.component.scss']
 })
 export class MetricsCardsComponent {
   @Input() summary!: DashboardSummary | null;
