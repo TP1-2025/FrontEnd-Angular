@@ -1,144 +1,188 @@
-<!-- src/app/features/dashboard/dashboard.component.html -->
-
 <div class="dashboard-container">
 
-  <section class="top-bar">
-    <div class="left">
-      <h2>Dashboard de Riesgo de Portabilidad</h2>
+  <header class="dashboard-header">
+    <h1>Dashboard de Predicción de Portabilidad</h1>
+    <p>Analiza el riesgo de portabilidad por cliente, comunidad y periodo.</p>
 
-      @if (modoVista === 'HISTORICO') {
-        <p>
-          Vista: Histórico completo (marzo–octubre)
-        </p>
-      }
-
-      @if (modoVista === 'MES' && mesSeleccionado === null && detalleActual.length === 0) {
-        <p>
-          Vista: Selecciona un mes histórico o sube un nuevo archivo para analizar un periodo.
-        </p>
-      }
-
-      @if (modoVista === 'MES' && mesSeleccionado !== null && detalleActual.length === 0) {
-        <p>
-          Vista: Mes {{ mesSeleccionado }} (histórico)
-        </p>
-      }
-
-      @if (detalleActual.length > 0) {
-        <p>
-          Vista: Dataset subido desde CSV
-        </p>
-      }
-    </div>
-
-    <div class="right">
-      <app-file-upload (fileProcessed)="onFileUploaded($event)"></app-file-upload>
-    </div>
-  </section>
-
-  <section class="mode-switch">
-    <button
-      [class.active]="modoVista === 'HISTORICO'"
-      (click)="cambiarModoVista('HISTORICO')">
-      Histórico completo
-    </button>
-
-    <button
-      [class.active]="modoVista === 'MES'"
-      (click)="cambiarModoVista('MES')">
-      Análisis por mes / dataset
-    </button>
-  </section>
+    <nav class="mode-switch">
+      <button
+        type="button"
+        [class.active]="mode === 'historico'"
+        (click)="setMode('historico')">
+        Vista general (todos los meses)
+      </button>
+      <button
+        type="button"
+        [class.active]="mode === 'mes'"
+        (click)="setMode('mes')">
+        Vista por mes
+      </button>
+      <button
+        type="button"
+        [class.active]="mode === 'comparacion'"
+        (click)="setMode('comparacion')">
+        Comparar meses
+      </button>
+    </nav>
+  </header>
 
   @if (errorMessage) {
-    <section class="error">
+    <div class="error-banner">
       {{ errorMessage }}
+    </div>
+  }
+
+  <!-- VISTA HISTÓRICA GENERAL -->
+  @if (mode === 'historico') {
+    <section class="view-section">
+      <h2>Vista general: histórico marzo–octubre</h2>
+
+      @if (loadingHistorico) {
+        <p>Cargando histórico...</p>
+      } @else if (summaryHistorico) {
+
+        <app-metrics-cards [summary]="summaryHistorico" />
+
+      
+        <app-risk-charts
+          [summary]="summaryHistorico"
+          [comunidadesTop]="comunidadesTopHistorico"
+          [evolucionPeriodo]="evolucionPeriodoHistorico"
+        />
+
+        <section class="table-section">
+          <h3>Muestra de líneas analizadas (histórico)</h3>
+          <app-risk-table [rows]="detalleHistorico" />
+        </section>
+      } @else {
+        <p>No hay datos históricos disponibles.</p>
+      }
     </section>
   }
 
-  @if (cargandoHistorico) {
-    <section class="loading">
-      Cargando datos históricos...
-    </section>
-  }
+  <!-- VISTA POR MES -->
+@if (mode === 'mes') {
+  <section class="view-section">
+    <h2>Vista por mes</h2>
 
-  @if (!cargandoHistorico && resumenHistorico) {
-    <section class="selectors">
-      @if (modoVista === 'MES' && detalleActual.length === 0) {
-        <div class="selector-mes">
-          <label>Mes histórico:</label>
-          <select [(ngModel)]="mesSeleccionado">
-            <option [ngValue]="null">-- Seleccionar --</option>
+    <div class="controls-row">
+      <div class="control-block">
+        <label for="periodoMes">Seleccionar periodo histórico:</label>
+        <select
+          id="periodoMes"
+          [(ngModel)]="selectedPeriodoMes"
+          name="periodoMes">
+          <option [ngValue]="null">-- Selecciona un periodo --</option>
+          @for (p of periodosDisponibles; track p) {
+            <option [ngValue]="p">{{ p }}</option>
+          }
+        </select>
+        <button type="button" (click)="loadMes()">Cargar</button>
+      </div>
+
+      <div class="control-block">
+        <span>O subir un CSV de un mes nuevo:</span>
+        <app-file-upload (fileProcessed)="onCsvUploaded($event)" />
+      </div>
+    </div>
+
+    @if (loadingMes) {
+      <p>Cargando datos del periodo...</p>
+    } @else if (summaryMes) {
+
+      <app-metrics-cards [summary]="summaryMes" />
+
+      <app-risk-charts
+        [summary]="summaryMes"
+        [comunidadesTop]="comunidadesTopMes"
+        [evolucionPeriodo]="[]"
+      />
+      <section class="table-section">
+        <h3>Líneas analizadas en el periodo seleccionado</h3>
+
+        <button class="download-btn" (click)="downloadDetalleMesCSV()">
+          Descargar CSV
+        </button>
+
+        <app-risk-table [rows]="detalleMes" />
+      </section>
+
+
+    
+
+    } @else {
+      <p>Selecciona un periodo o sube un CSV para ver el dashboard del mes.</p>
+    }
+  </section>
+}
+
+
+  <!-- VISTA DE COMPARACIÓN A VS B -->
+  @if (mode === 'comparacion') {
+    <section class="view-section">
+      <h2>Comparación de meses</h2>
+
+      <div class="controls-row">
+        <div class="control-block">
+          <label for="periodoA">Periodo A:</label>
+          <select
+            id="periodoA"
+            [(ngModel)]="selectedPeriodoA"
+            name="periodoA">
+            <option [ngValue]="null">-- Selecciona periodo A --</option>
             @for (p of periodosDisponibles; track p) {
-              <option [ngValue]="p">
-                {{ p }}
-              </option>
+              <option [ngValue]="p">{{ p }}</option>
             }
           </select>
         </div>
-      }
 
-      <div class="selector-riesgo">
-        <label>Filtro de nivel de riesgo:</label>
-        <select [(ngModel)]="filtroRiesgo">
-          <option value="TODOS">Todos</option>
-          <option value="BAJO">Bajo (&lt; 0.3)</option>
-          <option value="MEDIO">Medio (0.3 - 0.7)</option>
-          <option value="ALTO">Alto (&ge; 0.7)</option>
-        </select>
-      </div>
-    </section>
-  }
-
-  @if (!cargandoHistorico && getResumenPrincipal()) {
-    <section>
-      <app-metrics-cards [summary]="getResumenPrincipal()"></app-metrics-cards>
-
-      <div class="charts-wrapper">
-        <app-risk-charts [summary]="getResumenPrincipal()"></app-risk-charts>
-      </div>
-
-      <section class="table-section">
-        <h3>Detalle de líneas ({{ getDetallePrincipal().length }} registros)</h3>
-        <app-risk-table [records]="getDetallePrincipal()"></app-risk-table>
-      </section>
-    </section>
-  }
-
-  @if (
-    modoVista === 'MES'
-    && detalleActual.length === 0
-    && periodosDisponibles.length >= 2
-    && mesSeleccionado !== null
-  ) {
-
-    <section class="compare-section">
-      <h3>Comparar el mes {{ mesSeleccionado }} con otro mes histórico</h3>
-
-      <div class="compare-controls">
-        <label>Mes a comparar:</label>
-        <select [(ngModel)]="mesComparar">
-          <option [ngValue]="null">-- Seleccionar --</option>
-          @for (p of periodosDisponibles; track p) {
-            <option [ngValue]="p" [disabled]="p === mesSeleccionado">
-              {{ p }}
-            </option>
-          }
-        </select>
-      </div>
-
-      @if (getResumenComparacion()) {
-        <div class="compare-grid">
-          <div class="compare-card">
-            <h4>Mes {{ mesSeleccionado }}</h4>
-            <app-metrics-cards [summary]="getResumenComparacion()!.actual"></app-metrics-cards>
-          </div>
-
-          <div class="compare-card">
-            <h4>Mes {{ mesComparar }}</h4>
-            <app-metrics-cards [summary]="getResumenComparacion()!.comparar"></app-metrics-cards>
-          </div>
+        <div class="control-block">
+          <label for="periodoB">Periodo B:</label>
+          <select
+            id="periodoB"
+            [(ngModel)]="selectedPeriodoB"
+            name="periodoB">
+            <option [ngValue]="null">-- Selecciona periodo B --</option>
+            @for (p of periodosDisponibles; track p) {
+              <option [ngValue]="p">{{ p }}</option>
+            }
+          </select>
         </div>
+
+        <button type="button" (click)="loadComparacion()">
+          Comparar
+        </button>
+      </div>
+
+      @if (loadingComparacion) {
+        <p>Comparando periodos...</p>
+      } @else if (compareResult) {
+        <div class="compare-layout">
+          <div class="compare-column">
+            <h3>Periodo {{ compareResult.periodo_a }}</h3>
+            <app-metrics-cards [summary]="compareResult.resumen_a" />
+            <app-risk-charts
+              [summary]="compareResult.resumen_a"
+              [comunidadesTop]="compareResult.comunidades_top_a"
+            />
+          </div>
+
+          <div class="compare-column">
+            <h3>Periodo {{ compareResult.periodo_b }}</h3>
+            <app-metrics-cards [summary]="compareResult.resumen_b" />
+            <app-risk-charts
+              [summary]="compareResult.resumen_b"
+              [comunidadesTop]="compareResult.comunidades_top_b"
+            />
+          </div>
+
+
+
+        </div>
+
+        
+      } @else {
+        <p>Selecciona dos periodos para compararlos.</p>
       }
     </section>
   }

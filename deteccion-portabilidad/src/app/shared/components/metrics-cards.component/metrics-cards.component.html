@@ -1,18 +1,43 @@
-@if (summary) {
-  <div class="cards">
-    <div class="card">
-      <h4>Total líneas evaluadas</h4>
-      <p>{{ summary.total_lineas | number }}</p>
+@if (summary; as s) {
+
+  <div class="metrics-grid">
+
+    <div class="metric-card">
+      <h4>Total de líneas analizadas</h4>
+      <p class="metric-value">
+        {{ s.total_lineas | number:'1.0-0' }}
+      </p>
     </div>
 
-    <div class="card">
-      <h4>Probabilidad promedio</h4>
-      <p>{{ summary.promedio_probabilidad | percent:'1.1-2' }}</p>
+    <div class="metric-card">
+      <h4>Probabilidad promedio de portabilidad</h4>
+      <p class="metric-value">
+        {{ (s.promedio_probabilidad * 100) | number:'1.1-1' }}%
+      </p>
     </div>
 
-    <div class="card">
-      <h4>% líneas en riesgo alto</h4>
-      <p>{{ summary.porcentaje_alto_riesgo | percent:'1.1-2' }}</p>
+    <div class="metric-card">
+      <h4>% de líneas en alto riesgo</h4>
+      <p class="metric-value">
+        {{ (s.porcentaje_alto_riesgo * 100) | number:'1.1-1' }}%
+      </p>
     </div>
+
+    @if (s.por_segmento?.length) {
+      <div class="metric-card">
+        <h4>Segmento con mayor riesgo</h4>
+        <p class="metric-value">
+          {{ s.por_segmento![0].segmento }}
+        </p>
+        <p class="metric-sub">
+          {{ (s.por_segmento![0].pct_alto_riesgo * 100) | number:'1.1-1' }}%
+          alto riesgo
+        </p>
+      </div>
+    }
+
   </div>
+
+} @else {
+  <p>No hay métricas para mostrar.</p>
 }

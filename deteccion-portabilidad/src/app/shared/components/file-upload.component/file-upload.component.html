@@ -1,11 +1,7 @@
-
 <div class="file-upload">
-  <input type="file" (change)="onFileChange($event)" accept=".csv" />
-  <button (click)="onUpload()" [disabled]="loading">
+  <input type="file" accept=".csv" (change)="onFileChange($event)" />
+  <button type="button" (click)="upload()" [disabled]="loading || !selectedFile">
     {{ loading ? 'Procesando...' : 'Subir y procesar' }}
   </button>
-
-  @if (errorMessage) {
-    <p class="error">{{ errorMessage }}</p>
-  }
+  <p class="error-text" *ngIf="error">{{ error }}</p>
 </div>

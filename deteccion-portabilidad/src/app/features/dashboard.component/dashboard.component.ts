@@ -1,25 +1,14 @@
 // src/app/features/dashboard/dashboard.component.ts
 
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { CommonModule, NgClass } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { ChurnApiService } from '../../core/services/churn-api.service';
-import {
-  DashboardSummary,
-  PredictionRecord,
-  FilePredictResponse,
-  HistoricalScoresResponse,
-  PeriodSummary,
-} from '../../core/models/prediction.model';
-
-import { FileUploadComponent } from '../../shared/components/file-upload.component/file-upload.component'; 
-import { MetricsCardsComponent } from '../../shared/components/metrics-cards.component/metrics-cards.component'; 
-import { RiskTableComponent } from '../../shared/components/risk-table.component/risk-table.component'; 
-import { RiskChartsComponent } from '../../shared/components/risk-charts.component/risk-charts.component'; 
-
-type ModoVista = 'HISTORICO' | 'MES';
+import { DashboardService } from '../../core/services/churn-api.service';
+import { FileUploadComponent } from '../../shared/components/file-upload.component/file-upload.component';
+import { MetricsCardsComponent } from '../../shared/components/metrics-cards.component/metrics-cards.component';
+import { RiskChartsComponent } from '../../shared/components/risk-charts.component/risk-charts.component';
+import { RiskTableComponent } from '../../shared/components/risk-table.component/risk-table.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -27,208 +16,184 @@ type ModoVista = 'HISTORICO' | 'MES';
   imports: [
     CommonModule,
     FormsModule,
-    NgClass,
     FileUploadComponent,
     MetricsCardsComponent,
-    RiskTableComponent,
     RiskChartsComponent,
+    RiskTableComponent
   ],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss'],
+  styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit {
-  resumenHistorico: DashboardSummary | null = null;
-  detalleHistorico: PredictionRecord[] = [];
+
+ 
+  mode: 'historico' | 'mes' | 'comparacion' = 'historico';
+
+  errorMessage = '';
+
+  loadingHistorico = false;
+  summaryHistorico: any | null = null;
+  detalleHistorico: any[] = [];
   periodosDisponibles: number[] = [];
 
-  resumenActual: DashboardSummary | null = null;
-  detalleActual: PredictionRecord[] = [];
 
-  cargandoHistorico = false;
-  errorMessage: string | null = null;
+  comunidadesTopHistorico: any[] = [];
+  evolucionPeriodoHistorico: any[] = [];
 
-  modoVista: ModoVista = 'HISTORICO';
 
-  mesSeleccionado: number | null = null;
-  mesComparar: number | null = null;
+  loadingMes = false;
+  selectedPeriodoMes: number | null = null;
+  summaryMes: any | null = null;
+  detalleMes: any[] = [];
 
-  filtroRiesgo: 'TODOS' | 'BAJO' | 'MEDIO' | 'ALTO' = 'TODOS';
+  comunidadesTopMes: any[] = [];
 
-  constructor(
-    private api: ChurnApiService,
-    private route: ActivatedRoute
-  ) {}
+  // -------- Vista comparación A vs B --------
+  loadingComparacion = false;
+  selectedPeriodoA: number | null = null;
+  selectedPeriodoB: number | null = null;
+  compareResult: any | null = null;
+  comunidadesTopA: any[] = [];
+  comunidadesTopB: any[] = [];
+
+
+  constructor(private api: DashboardService) {}
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe((params) => {
-      const mode = (params['mode'] || '').toString().toLowerCase();
-      if (mode === 'mes') {
-        this.modoVista = 'MES';
-      } else {
-        this.modoVista = 'HISTORICO';
-      }
-    });
-
-    this.cargarHistorico();
+    this.loadHistorico();
   }
 
-  cargarHistorico(): void {
-    this.cargandoHistorico = true;
-    this.errorMessage = null;
+  setMode(mode: 'historico' | 'mes' | 'comparacion'): void {
+    this.mode = mode;
+    this.errorMessage = '';
 
-    this.api.getHistoricalScores(0).subscribe({
-      next: (resp: HistoricalScoresResponse) => {
-        this.resumenHistorico = resp.resumen;
-        this.detalleHistorico = resp.detalle;
+    if (mode === 'historico' && !this.summaryHistorico) {
+      this.loadHistorico();
+    }
+  }
 
-        this.periodosDisponibles = (resp.resumen.por_periodo || [])
-          .map((p: PeriodSummary) => p.NUMPERIODO)
-          .sort();
 
-        this.cargandoHistorico = false;
+  loadHistorico(): void {
+    this.loadingHistorico = true;
+    this.errorMessage = '';
+
+    this.api.getHistoricalScores().subscribe({
+      next: (resp) => {
+        this.summaryHistorico = resp.resumen;
+        this.detalleHistorico = resp.detalle ?? [];
+        this.periodosDisponibles = resp.periodos ?? [];
+
+
+        this.comunidadesTopHistorico = (resp as any).comunidades_top ?? [];
+        this.evolucionPeriodoHistorico = (resp as any).evolucion_periodo ?? [];
+
+        this.loadingHistorico = false;
       },
       error: (err) => {
-        this.errorMessage = 'Error cargando histórico: ' + (err?.error?.detail || '');
-        this.cargandoHistorico = false;
+        console.error(err);
+        this.errorMessage = 'Error al cargar el histórico.';
+        this.loadingHistorico = false;
+      }
+    });
+  }
+
+
+  loadMes(): void {
+    if (!this.selectedPeriodoMes) {
+      this.errorMessage = 'Selecciona un periodo para cargar.';
+      return;
+    }
+
+    this.loadingMes = true;
+    this.errorMessage = '';
+    this.summaryMes = null;
+    this.detalleMes = [];
+    this.comunidadesTopMes = [];
+
+    this.api.getPeriodScores(this.selectedPeriodoMes).subscribe({
+      next: (resp) => {
+        this.summaryMes = resp.resumen;
+        this.detalleMes = resp.detalle ?? [];
+        // Top comunidades para ese periodo
+        this.comunidadesTopMes = (resp as any).comunidades_top ?? [];
+
+        this.loadingMes = false;
       },
+      error: (err) => {
+        console.error(err);
+        this.errorMessage = 'Error al cargar datos del periodo.';
+        this.loadingMes = false;
+      }
     });
   }
 
-  onFileUploaded(response: FilePredictResponse): void {
-    this.resumenActual = response.resumen;
-    this.detalleActual = response.detalle;
-    this.modoVista = 'MES';
-    this.mesSeleccionado = null;
-    this.mesComparar = null;
+
+  onCsvUploaded(result: { resumen: any; detalle: any[] }): void {
+    this.summaryMes = result.resumen;
+    this.detalleMes = result.detalle;
+    this.comunidadesTopMes = [];  
+    this.errorMessage = '';
   }
 
-  private buildSummaryFromRecords(records: PredictionRecord[]): DashboardSummary {
-    if (!records || records.length === 0) {
-      return {
-        total_lineas: 0,
-        promedio_probabilidad: 0,
-        porcentaje_alto_riesgo: 0,
-        por_nivel_riesgo: [],
-        por_cluster: [],
-        por_periodo: [],
-      };
+
+    loadComparacion(): void {
+    if (!this.selectedPeriodoA || !this.selectedPeriodoB) {
+      this.errorMessage = 'Selecciona ambos periodos para comparar.';
+      return;
+    }
+    if (this.selectedPeriodoA === this.selectedPeriodoB) {
+      this.errorMessage = 'Los periodos A y B deben ser distintos.';
+      return;
     }
 
-    const total = records.length;
-    const probs = records.map((r) => r.probabilidad_portabilidad || 0);
-    const promedio = probs.reduce((a, b) => a + b, 0) / total;
+    this.loadingComparacion = true;
+    this.errorMessage = '';
+    this.compareResult = null;
+    this.comunidadesTopA = [];
+    this.comunidadesTopB = [];
 
-    let bajo = 0,
-      medio = 0,
-      alto = 0;
-    for (const p of probs) {
-      if (p < 0.3) bajo++;
-      else if (p < 0.7) medio++;
-      else alto++;
-    }
-
-    const porcentajeAlto = alto / total;
-
-    const porNivel = [
-      { nivel_riesgo: 'BAJO', conteo: bajo, prob_promedio: 0 },
-      { nivel_riesgo: 'MEDIO', conteo: medio, prob_promedio: 0 },
-      { nivel_riesgo: 'ALTO', conteo: alto, prob_promedio: 0 },
-    ];
-
-    const clusterMap: { [key: string]: { conteo: number; sumaProb: number } } = {};
-    for (const r of records) {
-      const key = (r.cluster_id ?? -1).toString();
-      if (!clusterMap[key]) clusterMap[key] = { conteo: 0, sumaProb: 0 };
-      clusterMap[key].conteo++;
-      clusterMap[key].sumaProb += r.probabilidad_portabilidad || 0;
-    }
-    const porCluster = Object.keys(clusterMap).map((k) => ({
-      cluster_id: Number(k),
-      conteo: clusterMap[k].conteo,
-      prob_promedio: clusterMap[k].sumaProb / clusterMap[k].conteo,
-    }));
-
-    const periodoMap: { [key: string]: { conteo: number; sumaProb: number } } = {};
-    for (const r of records) {
-      const per = r.NUMPERIODO != null ? r.NUMPERIODO.toString() : 'NA';
-      if (!periodoMap[per]) periodoMap[per] = { conteo: 0, sumaProb: 0 };
-      periodoMap[per].conteo++;
-      periodoMap[per].sumaProb += r.probabilidad_portabilidad || 0;
-    }
-    const porPeriodo = Object.keys(periodoMap).map((k) => ({
-      NUMPERIODO: k === 'NA' ? -1 : Number(k),
-      conteo: periodoMap[k].conteo,
-      prob_promedio: periodoMap[k].sumaProb / periodoMap[k].conteo,
-    }));
-
-    return {
-      total_lineas: total,
-      promedio_probabilidad: promedio,
-      porcentaje_alto_riesgo: porcentajeAlto,
-      por_nivel_riesgo: porNivel,
-      por_cluster: porCluster,
-      por_periodo: porPeriodo,
-    };
-  }
-
-  private filtrarPorPeriodo(records: PredictionRecord[], periodo: number | null): PredictionRecord[] {
-    if (periodo == null) return records;
-    return records.filter((r) => r.NUMPERIODO === periodo);
-  }
-
-  getResumenPrincipal(): DashboardSummary | null {
-    if (this.resumenActual && this.detalleActual.length > 0) {
-      return this.resumenActual;
-    }
-
-    if (this.modoVista === 'HISTORICO') {
-      return this.resumenHistorico;
-    }
-
-    if (this.modoVista === 'MES' && this.mesSeleccionado != null && this.detalleActual.length === 0) {
-      const regs = this.filtrarPorPeriodo(this.detalleHistorico, this.mesSeleccionado);
-      return this.buildSummaryFromRecords(regs);
-    }
-
-    return this.resumenHistorico;
-  }
-
-  getDetallePrincipal(): PredictionRecord[] {
-    const base = this.detalleActual.length > 0 ? this.detalleActual : this.detalleHistorico;
-
-    let filtrados = base;
-    if (this.modoVista === 'MES' && this.mesSeleccionado != null && this.detalleActual.length === 0) {
-      filtrados = this.filtrarPorPeriodo(this.detalleHistorico, this.mesSeleccionado);
-    }
-
-    if (this.filtroRiesgo === 'TODOS') return filtrados;
-
-    return filtrados.filter((r) => {
-      const p = r.probabilidad_portabilidad;
-      if (this.filtroRiesgo === 'BAJO') return p < 0.3;
-      if (this.filtroRiesgo === 'MEDIO') return p >= 0.3 && p < 0.7;
-      if (this.filtroRiesgo === 'ALTO') return p >= 0.7;
-      return true;
+    this.api.comparePeriods(this.selectedPeriodoA, this.selectedPeriodoB).subscribe({
+      next: (resp) => {
+        this.compareResult = resp;
+        this.comunidadesTopA = resp.comunidades_top_a ?? [];
+        this.comunidadesTopB = resp.comunidades_top_b ?? [];
+        this.loadingComparacion = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.errorMessage = 'Error al comparar los periodos.';
+        this.loadingComparacion = false;
+      }
     });
   }
-
-  getResumenComparacion(): { actual: DashboardSummary; comparar: DashboardSummary } | null {
-    if (this.detalleActual.length > 0) return null;
-    if (!this.resumenHistorico) return null;
-    if (this.mesSeleccionado == null || this.mesComparar == null) return null;
-
-    const actualRegs = this.filtrarPorPeriodo(this.detalleHistorico, this.mesSeleccionado);
-    const compararRegs = this.filtrarPorPeriodo(this.detalleHistorico, this.mesComparar);
-
-    const resumenActual = this.buildSummaryFromRecords(actualRegs);
-    const resumenComparar = this.buildSummaryFromRecords(compararRegs);
-
-    return { actual: resumenActual, comparar: resumenComparar };
+  downloadDetalleMesCSV(): void {
+  if (!this.detalleMes || this.detalleMes.length === 0) {
+    alert("No hay datos para descargar.");
+    return;
   }
 
-  cambiarModoVista(modo: ModoVista): void {
-    this.modoVista = modo;
-    this.mesSeleccionado = null;
-    this.mesComparar = null;
-  }
+  const rows = this.detalleMes;
+
+
+  const csvHeaders = Object.keys(rows[0]);
+  const csvRows = rows.map(row =>
+    csvHeaders.map(h => JSON.stringify(row[h] ?? "")).join(",")
+  );
+
+  const csvString = [csvHeaders.join(","), ...csvRows].join("\n");
+
+  // Crear archivo descargable
+  const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `detalle_${this.selectedPeriodoMes}.csv`;
+  link.click();
+
+
+  URL.revokeObjectURL(url);
+}
+
+
 }

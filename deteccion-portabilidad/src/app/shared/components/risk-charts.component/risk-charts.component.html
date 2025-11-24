@@ -1,42 +1,106 @@
-<!-- src/app/shared/components/risk-charts/risk-charts.component.html -->
+<div class="charts-grid">
 
-@if (summary) {
-  <div class="charts-container">
+  <!-- Distribución por nivel de riesgo -->
+  <section class="chart-card">
+    <h3>Distribución por nivel de riesgo</h3>
 
-    <div class="chart-card">
-      <h4>Distribución por nivel de riesgo</h4>
-
-      @for (r of summary.por_nivel_riesgo; track r.nivel_riesgo) {
-        <div class="bar-row">
-          <span class="label">{{ r.nivel_riesgo }}</span>
-          <div class="bar">
-            <div
-              class="bar-fill"
-              [style.width]="calcularAnchoBarra(r.conteo, maxConteoNivel)"
-            ></div>
-          </div>
-          <span class="value">{{ r.conteo }}</span>
-        </div>
-      }
-    </div>
-
-    @if (summary.por_cluster && summary.por_cluster.length) {
-      <div class="chart-card">
-        <h4>Distribución por cluster</h4>
-
-        @for (c of summary.por_cluster; track c.cluster_id) {
-          <div class="bar-row">
-            <span class="label">Cluster {{ c.cluster_id }}</span>
-            <div class="bar">
+    @if (!summary || !nivelesRiesgo.length) {
+      <p>No hay datos para mostrar.</p>
+    } @else {
+      <ul class="bar-list">
+        @for (item of nivelesRiesgo; track item.nivel) {
+          <li class="bar-item">
+            <span class="label">{{ item.nivel }}</span>
+            <div class="bar-track">
               <div
                 class="bar-fill"
-                [style.width]="calcularAnchoBarra(c.conteo, maxConteoCluster)"
-              ></div>
+                [style.width.%]="(item.conteo / (summary!.total_lineas || 1)) * 100">
+              </div>
             </div>
-            <span class="value">{{ c.conteo }}</span>
-          </div>
+            <span class="value">
+              {{ item.conteo }} líneas ·
+              prob. media {{ (item.prob_promedio * 100) | number:'1.1-1' }}%
+            </span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <!-- Top comunidades de mayor riesgo -->
+  <section class="chart-card">
+    <div class="card-header">
+      <h3>Top comunidades (clusters) más propensas a portar</h3>
+      <div class="metric-switch">
+        @for (opt of metricOptions; track opt.key) {
+          <button
+            type="button"
+            [class.active]="selectedMetric === opt.key"
+            (click)="selectedMetric = opt.key">
+            {{ opt.label }}
+          </button>
         }
       </div>
+    </div>
+
+    @if (!comunidadesTop || comunidadesTop.length === 0) {
+      <p>No hay comunidades para mostrar.</p>
+    } @else {
+      <ul class="bar-list">
+        @for (c of comunidadesTop; track c.cluster_id) {
+          <li class="bar-item">
+            <div class="label-block">
+              <span class="label">
+                Comunidad {{ c.cluster_id }}
+              </span>
+              @if (c.segmento_dominante) {
+                <span class="sub-label">
+                  Segmento dominante: {{ c.segmento_dominante }}
+                </span>
+              }
+            </div>
+            <div class="bar-track">
+              <div
+                class="bar-fill"
+                [style.width]="barWidthComunidad(c)">
+              </div>
+            </div>
+            <span class="value">
+              {{ labelValorComunidad(c) }} ·
+              {{ c.total_lineas }} líneas
+            </span>
+          </li>
+        }
+      </ul>
     }
-  </div>
-}
+  </section>
+
+  <!-- Evolución por periodo -->
+  <section class="chart-card full-width">
+    <h3>Evolución del % de alto riesgo por periodo</h3>
+
+    @if (!periodos || periodos.length === 0) {
+      <p>No hay información de periodos disponible.</p>
+    } @else {
+      <ul class="bar-list horizontal">
+        @for (p of periodos; track p.NUMPERIODO) {
+          <li class="bar-item vertical">
+            <div class="bar-track vertical">
+              <div
+                class="bar-fill vertical"
+                [style.height]="barWidthPeriodo(p)">
+              </div>
+            </div>
+            <span class="label">
+              {{ p.NUMPERIODO }}
+            </span>
+            <span class="value">
+              {{ (p.pct_alto_riesgo * 100) | number:'1.1-1' }}%
+            </span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+</div>

@@ -1,25 +1,48 @@
-/* src/app/shared/components/metrics-cards/metrics-cards.component.css */
-
-.cards {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+/* Contenedor de todas las cards de métricas */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.2rem;
+  margin-top: 1rem;
 }
 
-.card {
-  padding: 1rem;
+/* Tarjeta individual */
+.metric-card {
+  padding: 18px 20px;
   background: #ffffff;
-  border-radius: 8px;
-  min-width: 200px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.card h4 {
-  margin: 0 0 0.5rem 0;
-}
-
-.card p {
+/* Título de cada métrica (h4) */
+.metric-card h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: bold;
+}
+
+/* Valor principal de la métrica */
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+/* Subtítulo o info adicional */
+.metric-sub {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Responsive pequeño */
+@media (max-width: 600px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
 }

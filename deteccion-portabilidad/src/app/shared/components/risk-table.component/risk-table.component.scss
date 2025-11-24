@@ -1,33 +1,14 @@
-/* src/app/shared/components/risk-table/risk-table.component.css */
-
-.risk-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #ffffff;
+.table-wrapper {
+  margin-top: 1rem;
+  background: white;
   border-radius: 8px;
   overflow: hidden;
 }
 
-.risk-table th,
-.risk-table td {
-  padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 0.9rem;
+table {
+  width: 100%;
 }
 
-.risk-table thead {
-  background: #e5e7eb;
-}
-
-.low {
-  color: #166534;
-}
-
-.mid {
-  color: #92400e;
-}
-
-.high {
-  color: #b91c1c;
-  font-weight: bold;
+mat-paginator {
+  border-top: 1px solid #e0e0e0;
 }

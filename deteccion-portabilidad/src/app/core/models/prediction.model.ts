@@ -1,49 +1,99 @@
-// src/app/core/models/prediction.model.ts
-
-export interface PredictionRecord {
-  numero: string;
-  cluster_id: number;
-  probabilidad_portabilidad: number;
-  NUMPERIODO?: number;
-  ds_base_bsns?: string;
-  VCHPLAN_TIPO?: string;
-  // agrega más campos si tu inference devuelve más
-}
-
-export interface RiskLevelSummary {
-  nivel_riesgo: string;  // "BAJO" | "MEDIO" | "ALTO"
+export interface NivelRiesgoSummary {
+  nivel: string;           // BAJO / MEDIO / ALTO
   conteo: number;
-  prob_promedio: number;
+  prob_promedio: number;  
 }
 
-export interface ClusterSummary {
+export interface ComunidadSummary {
   cluster_id: number;
-  conteo: number;
+  total_lineas: number;
   prob_promedio: number;
+  pct_alto_riesgo: number;
+  segmento_dominante?: string;
 }
 
-export interface PeriodSummary {
+export interface PeriodoSummary {
   NUMPERIODO: number;
   conteo: number;
   prob_promedio: number;
+
+  pct_alto_riesgo?: number;
+}
+
+export interface SegmentoSummary {
+  segmento: string;
+  conteo: number;
+  prob_promedio: number;
+  pct_alto_riesgo: number;
 }
 
 export interface DashboardSummary {
   total_lineas: number;
   promedio_probabilidad: number;
   porcentaje_alto_riesgo: number;
-  por_nivel_riesgo: RiskLevelSummary[];
-  por_cluster: ClusterSummary[];
-  por_periodo: PeriodSummary[];
+
+  por_nivel_riesgo: NivelRiesgoSummary[];
+
+
+  por_cluster?: { cluster_id: number; conteo: number; prob_promedio: number }[];
+
+   comunidades?: ComunidadSummary[];
+
+  por_periodo: PeriodoSummary[];
+
+  por_segmento?: SegmentoSummary[];
 }
+
+
+export interface PredictionRow {
+
+  NUMPERIODO?: number;
+  id_cst?: string;
+  id_sbsc?: string;
+  numero?: string;
+  codigo_cliente?: string;
+  tipo_documento?: string;
+  numero_documento?: string;
+
+  probabilidad_portabilidad: number;
+  cluster_id?: number;
+  nivel_riesgo?: string;
+
+
+  [key: string]: any;
+}
+
+
+export interface EvolucionPeriodoPoint {
+  NUMPERIODO: number;
+  pct_alto_riesgo: number;   
+}
+
 
 export interface HistoricalScoresResponse {
   resumen: DashboardSummary;
-  detalle: PredictionRecord[];
-  archivos_usados: string[];
+  detalle: PredictionRow[];
+  periodos: number[];
+
+  comunidades_top: ComunidadSummary[];
+  evolucion_periodo: EvolucionPeriodoPoint[];
 }
 
-export interface FilePredictResponse {
+
+export interface PeriodScoresResponse {
   resumen: DashboardSummary;
-  detalle: PredictionRecord[];
+  detalle: PredictionRow[];
+  periodo: number;
 }
+
+export interface ComparePeriodsResponse {
+  periodo_a: number;
+  resumen_a: DashboardSummary;
+  periodo_b: number;
+  resumen_b: DashboardSummary;
+
+
+  comunidades_top_a?: ComunidadSummary[];
+  comunidades_top_b?: ComunidadSummary[];
+}
+
